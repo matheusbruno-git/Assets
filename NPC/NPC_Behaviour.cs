@@ -23,7 +23,7 @@ public class NPC_Behaviour : MonoBehaviour
     public string job;
     public LightningManager dayScript;
     public float WakeUpTime, LunchTime, EndLunchTime, SocializeTime, GoHomeTime;
-    public float happiness, anger, hunger;
+    public float happiness, hunger, hungerIncreaser;
     public Brain BrainCode;
     bool IsEating;
 
@@ -41,6 +41,7 @@ public class NPC_Behaviour : MonoBehaviour
 
     void Update()
     {
+        hunger = Mathf.Min(hunger + Time.deltaTime * hungerIncreaser, 100);
         float hour = dayScript.TimeOfDay;
         if (hour >= WakeUpTime && hour <= LunchTime)
         {
@@ -81,8 +82,8 @@ public class NPC_Behaviour : MonoBehaviour
 
     void Eat(string food)
     {
-        // colocar animaçao de comer e a comida na mão
-        Debug.Log($"Eating {food}");
+        anim.Play("Eating");
+        hunger = 0;
     }
 
     void Socialize()
@@ -107,7 +108,6 @@ public class NPC_Behaviour : MonoBehaviour
         if (favoritePlaceTransform != null)
         {
             agent.SetDestination(favoritePlaceTransform.position);
-            Debug.Log($"Visiting favorite place: {place}");
         }
     }
 
@@ -116,8 +116,7 @@ public class NPC_Behaviour : MonoBehaviour
         GameObject personObject = GameObject.Find(person);
         if (personObject != null)
         {
-            Debug.Log($"Interacting with {person}");
-            // colocar mais coisa
+            StartConversation(personObject.GetComponent<NPC_Behaviour>());
         }
     }
 
@@ -136,14 +135,6 @@ public class NPC_Behaviour : MonoBehaviour
                     StartConversation(nearbyNPC);
                     break;
                 }
-                foreach (var liking in nearbyNPC.BrainCode.likings)
-                {
-                    if (liking.likingType == Brain.LikingType.Food && liking.value == "DislikedFood")
-                    {
-                        Debug.Log($"{nearbyNPC.name} is eating a disliked food.");
-                        // se afastar a menos que goste do lugar ou da pessoa
-                    }
-                }
             }
         }
     }
@@ -158,10 +149,11 @@ public class NPC_Behaviour : MonoBehaviour
 
         Debug.Log($"{name} started talking with {otherNPC.name}");
 
-        StartCoroutine(StopConversation(otherNPC, 5f));
+        float talkTime = Random.Range(5f, 60f);
+        StartCoroutine(StopConversation(otherNPC, talkTime));
     }
 
-    void memorizeSomething(string memory)
+    void memorize(string memory)
     {
         BrainCode.AddToMemories(memory);
     }
@@ -175,9 +167,8 @@ public class NPC_Behaviour : MonoBehaviour
 
         anim.Play("Idle");
         otherNPC.anim.Play("Idle");
+        memorize($"{name} talked with {otherNPC.name} for {waitTime} seconds");
 
-        Debug.Log($"{name} stopped talking with {otherNPC.name}");
     }
 
-    // depois remover todos os debugs para otimizar o codigo
 }

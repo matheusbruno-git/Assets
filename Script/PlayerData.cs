@@ -11,7 +11,7 @@ public class PlayerData
     public float Strength = 20f;
     public float Speed = 2.0f;
     public float AngerLevel;
-    public float Health;
+    public float Health = 100f;
     public float MaxHealth = 100f;
 
     public bool HasItem(string itemName, int amount)

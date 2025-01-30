@@ -10,10 +10,12 @@ public class CombatManager : MonoBehaviour
 
     [Header("Aim")]
     [SerializeField] private CinemachineVirtualCamera aimVirtualCamera;
+    [SerializeField] private CinemachineVirtualCamera virtualCamera;
     [SerializeField] private float normalSensitivity = 1f;
     [SerializeField] private float aimSensitivity = 0.5f;
     [SerializeField] private LayerMask aimColliderLayerMask;
-    private bool isAiming;
+    bool isAiming;
+
 
     [Header("Dodge")]
     private CharacterController controller;
@@ -32,6 +34,8 @@ public class CombatManager : MonoBehaviour
     public float moveSpeed = 5f;
     public float rotationSpeed = 10f;
     public float approachDistance = 1f;
+    bool isBlocking;
+    public float parryTime;
 
     private PlayerInput playerInput;
 
@@ -40,6 +44,7 @@ public class CombatManager : MonoBehaviour
     private InputAction aimAction;
     private InputAction attack1Action;
     private InputAction attack2Action;
+    private InputAction parryAction;
 
     void Start()
     {
@@ -52,12 +57,24 @@ public class CombatManager : MonoBehaviour
         aimAction = playerInput.actions["Aim"];
         attack1Action = playerInput.actions["Attack1"];
         attack2Action = playerInput.actions["Attack2"];
+        parryAction = playerInput.actions["Parry"];
     }
 
     void Update()
     {
         HandleAiming();
         HandleAttacks();
+        if (parryAction.triggered)
+        {
+            Attack1();
+        }
+    }
+
+    IEnumerator Parry()
+    {
+        isBlocking = true;
+        yield return new WaitForSecond(parryTime);
+        isBlocking = false;
     }
 
     private void HandleAiming()
@@ -67,9 +84,8 @@ public class CombatManager : MonoBehaviour
 
         if (isAiming)
         {
+            virtualCamera.gameObject.SetActive(false);
             aimVirtualCamera.gameObject.SetActive(true);
-            // Reduce camera sensitivity
-            // Update aiming logic
             Vector3 mouseWorldPosition = Vector3.zero;
             Vector2 screenCenterPoint = new Vector2(Screen.width / 2f, Screen.height / 2f);
             Ray ray = Camera.main.ScreenPointToRay(screenCenterPoint);
@@ -86,6 +102,7 @@ public class CombatManager : MonoBehaviour
         else
         {
             aimVirtualCamera.gameObject.SetActive(false);
+            virtualCamera.gameObject.SetActive(true);
         }
     }
 
@@ -151,6 +168,6 @@ public class CombatManager : MonoBehaviour
 
     public bool IsInCombat()
     {
-        return isAttacking || isDodging || isAiming;
+        return isAttacking || isDodging || isAiming || isBlocking;
     }
 }
