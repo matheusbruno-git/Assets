@@ -14,11 +14,17 @@ public class EnemyAI : MonoBehaviour
 
     //Attacking
     public float TimeBetweenAttacks;
-    bool alreadyAttacked;
+    bool isAttacking;
 
     //States
     public float sightRange, attackRange;
     public bool playerInSightRange, playerInAttackRange;
+
+    //Take Damage
+    public float health = 50f;
+    public Animator anim;
+    private NavMeshAgent agent;
+    private bool CanGetHurted = true;
 
     private void Awake()
     {
@@ -36,6 +42,33 @@ public class EnemyAI : MonoBehaviour
         if(playerInSightRange && playerInAttackRange) AttackPlayer();
 
     }
+
+    public void TakeDamage(float amount)
+    {
+        if(CanGetHurted) 
+        {
+            Debug.Log("Hurt");
+            anim.Play("Impact");
+            health -= amount;
+        }
+        if (health <= 0f)
+        {
+            Die();
+        }
+    }
+
+    public void Takedown(string TakedownAnim)
+    {
+        anim.Play(TakedownAnim);
+        Die();
+    }
+
+    void Die()
+    {
+        CanGetHurted = false;
+        anim.SetBool("Died", true);
+        Destroy(this.gameObject, 5f);
+    } 
 
     void Patrolling()
     {
@@ -71,15 +104,17 @@ public class EnemyAI : MonoBehaviour
         agent.SetDestination(transform.position);
         transform.LookAt(player);
 
-        if(!alreadyAttacked)
+        if(!isAttacking)
         {
-            alreadyAttacked = true;
+            isAttacking = true;
+
+            anim.Play("Attack");
             Invoke(nameof(ResetAttack), TimeBetweenAttacks);
         }
     }
 
     void ResetAttack()
     {
-        alreadyAttacked = false;
+        isAttacking = false;
     }
 }

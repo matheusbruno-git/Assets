@@ -116,7 +116,8 @@ public class NPC_Behaviour : MonoBehaviour
         GameObject personObject = GameObject.Find(person);
         if (personObject != null)
         {
-            StartConversation(personObject.GetComponent<NPC_Behaviour>());
+            float talkTime = Random.Range(5f, 60f);
+            StartCoroutine(Conversation(personObject.GetComponent<NPC_Behaviour>(), talkTime));
         }
     }
 
@@ -132,25 +133,12 @@ public class NPC_Behaviour : MonoBehaviour
 
                 if (nearbyNPC != null && !isTalking)
                 {
-                    StartConversation(nearbyNPC);
+                    float talkTime = Random.Range(5f, 60f);
+                    StartCoroutine(Conversation(nearbyNPC, talkTime));
                     break;
                 }
             }
         }
-    }
-
-    void StartConversation(NPC_Behaviour otherNPC)
-    {
-        isTalking = true;
-        otherNPC.isTalking = true;
-
-        anim.Play("Talk");
-        otherNPC.anim.Play("Talk");
-
-        Debug.Log($"{name} started talking with {otherNPC.name}");
-
-        float talkTime = Random.Range(5f, 60f);
-        StartCoroutine(StopConversation(otherNPC, talkTime));
     }
 
     void memorize(string memory)
@@ -158,8 +146,16 @@ public class NPC_Behaviour : MonoBehaviour
         BrainCode.AddToMemories(memory);
     }
 
-    IEnumerator StopConversation(NPC_Behaviour otherNPC, float waitTime)
+    IEnumerator Conversation(NPC_Behaviour otherNPC, float waitTime)
     {
+        isTalking = true;
+        otherNPC.isTalking = true;
+
+        anim.Play("Talk");
+        otherNPC.anim.Play("Talk");
+ 
+        Debug.Log($"{name} started talking with {otherNPC.name}");
+
         yield return new WaitForSeconds(waitTime);
 
         isTalking = false;
@@ -168,7 +164,5 @@ public class NPC_Behaviour : MonoBehaviour
         anim.Play("Idle");
         otherNPC.anim.Play("Idle");
         memorize($"{name} talked with {otherNPC.name} for {waitTime} seconds");
-
     }
-
 }

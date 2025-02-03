@@ -5,20 +5,29 @@ using UnityEngine;
 public class CollisionDetection : MonoBehaviour
 {
     public CombatManager attackCode;
-    public Target target;
-    public float damage;
+    public EnemyAI enemyAI
+
 
     private void OnTriggerEnter(Collider other) 
     {
-        if(other.tag == "Enemy" && attackCode.isAttacking) 
+        if(other.tag == "Enemy" && enemyAI.isAttacking && attackCode != null) 
         {
-            Debug.Log(other.name);
-            Target target = other.GetComponent<Target>();
+            EnemyAI target = other.GetComponent<EnemyAi>();
             if(target != null)
             {
-                target.TakeDamage(damage);
+                target.TakeDamage(attackCode.damage);
+            }
+        }
+        else if(other.tag == "Player" && attackCode.isAttacking && enemyAI != null)
+        {
+            Debug.Log(other.name);
+            CombatManager playerHealth = other.GetComponent<CombatManager>();
+            if(playerHealth != null)
+            {
+                playerHealth.TakeDamage(enemyAI.damage);
             }
         }
     }
 
 }
+

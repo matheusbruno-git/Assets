@@ -17,6 +17,10 @@ public class CombatManager : MonoBehaviour
     bool isAiming;
 
 
+    [Header("Arrow")]
+    public GameObject arrowPrefab;
+    public float arrowSpeed;
+    public int arrowCount;
     [Header("Dodge")]
     private CharacterController controller;
     private bool isDodging;
@@ -164,6 +168,29 @@ public class CombatManager : MonoBehaviour
     public void ResetAttack()
     {
         isAttacking = false;
+    }
+
+    public void TakeDamage(float amount)
+    {
+        if(!isBlocking) 
+        {
+            anim.Play("Impact");
+            health -= amount;
+        }
+    }
+
+    
+
+    
+    public void ShootArrow()
+    {
+        if (isAiming && attack1Action.triggered && arrowCount != 0)
+        {
+            arrow.Shoot(arrowSpeed);
+            GameObject arrow = Instantiate(arrowPrefab, transform.position,  transform.rotation);
+            arrow.GetComponent<Rigidbody>().AddRelativeForce(new Vector3 (0, arrowSpeed, 0));
+            arrowCount--;
+        }
     }
 
     public bool IsInCombat()
