@@ -1,0 +1,9 @@
+{
+  "padeiro_viking": {
+    "saudacao": "Hail, viajante! O pão rústico está quente e pronto para encher teu estômago antes da próxima batalha!",
+    "opcoes": [
+      "Pão de cevada forte",
+      "Bolo de mel digno dos deuses"
+    ]
+  }
+}
