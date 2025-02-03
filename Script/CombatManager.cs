@@ -73,7 +73,7 @@ public class CombatManager : MonoBehaviour
     IEnumerator Parry()
     {
         isBlocking = true;
-        yield return new WaitForSecond(parryTime);
+        yield return new WaitForSeconds(parryTime);
         isBlocking = false;
     }
 
