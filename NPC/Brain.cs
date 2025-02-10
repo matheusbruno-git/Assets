@@ -21,27 +21,50 @@ public class Brain : ScriptableObject
     [System.Serializable]
     public class Liking
     {
-        public LikingType likingType;
-        public string value;
+        public LikingType Type { get; set; }
+        public string Value { get; set; }
+
+        public Liking(LikingType type, string value)
+        {
+            Type = type;
+            Value = value;
+        }
     }
 
     [System.Serializable]
     public class Disliking
     {
-        public DislikingType dislikingType;
-        public string value;
+        public DislikingType Type { get; set; }
+        public string Value { get; set; }
+
+        public Disliking(DislikingType type, string value)
+        {
+            Type = type;
+            Value = value;
+        }
     }
 
-    public List<Liking> likings = new List<Liking>();
-    public List<Disliking> dislikings = new List<Disliking>();
-    public List<string> memories = new List<string>();
+    public List<Liking> Likings { get; private set; } = new List<Liking>();
+    public List<Disliking> Dislikings { get; private set; } = new List<Disliking>();
+    public List<string> Memories { get; private set; } = new List<string>();
 
     public void AddToMemories(string memory)
     {
-        if (!memories.Contains(memory))
+        if (!Memories.Contains(memory))
         {
-            memories.Add(memory);
+            Memories.Add(memory);
             Debug.Log($"Memory added: {memory}");
         }
     }
+
+    public void AddLiking(LikingType type, string value)
+    {
+        Likings.Add(new Liking(type, value));
+    }
+
+    public void AddDisliking(DislikingType type, string value)
+    {
+        Dislikings.Add(new Disliking(type, value));
+    }
 }
+
