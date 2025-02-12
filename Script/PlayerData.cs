@@ -2,7 +2,8 @@ using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
 
-public class PlayerData
+[ExecuteAlways]
+public class PlayerData : MonoBehaviour
 {
     public Dictionary<string, int> collectedItems = new Dictionary<string, int>();
     public List<string> talkedToNPCs = new List<string>();

@@ -9,11 +9,10 @@ MonoBehaviour:
   m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 8ad47aefd39a62e4bb30276007843328, type: 3}
-  m_Name: 1
+  m_Script: {fileID: 11500000, guid: 47784cdda48c04a42a789d79677bb1d0, type: 3}
+  m_Name: ReachVillage
   m_EditorClassIdentifier: 
-  QuestName: 
-  QuestDescription: 
-  questConditions: []
-  missionState: 0
-  EmittingNPCs: []
+  conditionDescription: Go to the village
+  conditionType: 2
+  targetName: Village
+  targetAmount: 0

@@ -5,14 +5,14 @@ using UnityEngine;
 public class CollisionDetection : MonoBehaviour
 {
     public CombatManager attackCode;
-    public EnemyAI enemyAI
+    public EnemyAI enemyAI;
 
 
     private void OnTriggerEnter(Collider other) 
     {
         if(other.tag == "Enemy" && enemyAI.isAttacking && attackCode != null) 
         {
-            EnemyAI target = other.GetComponent<EnemyAi>();
+            EnemyAI target = other.GetComponent<EnemyAI>();
             if(target != null)
             {
                 target.TakeDamage(attackCode.damage);

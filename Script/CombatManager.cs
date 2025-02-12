@@ -6,21 +6,23 @@ using Cinemachine;
 
 public class CombatManager : MonoBehaviour
 {
-    public PlayerData playerData;
+
 
     [Header("Aim")]
-    [SerializeField] private CinemachineVirtualCamera aimVirtualCamera;
-    [SerializeField] private CinemachineVirtualCamera virtualCamera;
+    [SerializeField] private CinemachineFreeLook aimVirtualCamera;
+    [SerializeField] private CinemachineFreeLook virtualCamera;
     [SerializeField] private float normalSensitivity = 1f;
     [SerializeField] private float aimSensitivity = 0.5f;
     [SerializeField] private LayerMask aimColliderLayerMask;
     bool isAiming;
+    public PlayerData playerData;
 
 
     [Header("Arrow")]
     public GameObject arrowPrefab;
     public float arrowSpeed;
     public int arrowCount;
+
     [Header("Dodge")]
     private CharacterController controller;
     private bool isDodging;
@@ -40,6 +42,8 @@ public class CombatManager : MonoBehaviour
     public float approachDistance = 1f;
     bool isBlocking;
     public float parryTime;
+    public float damage;
+    public float weaponMultiplier;
 
     private PlayerInput playerInput;
 
@@ -57,6 +61,7 @@ public class CombatManager : MonoBehaviour
         controller = GetComponent<CharacterController>();
 
         playerInput = GetComponent<PlayerInput>();
+        damage = playerData.Strength *  weaponMultiplier;
 
         aimAction = playerInput.actions["Aim"];
         attack1Action = playerInput.actions["Attack1"];
@@ -175,7 +180,7 @@ public class CombatManager : MonoBehaviour
         if(!isBlocking) 
         {
             anim.Play("Impact");
-            health -= amount;
+            playerData.Health -= amount;
         }
     }
 
@@ -186,7 +191,6 @@ public class CombatManager : MonoBehaviour
     {
         if (isAiming && attack1Action.triggered && arrowCount != 0)
         {
-            arrow.Shoot(arrowSpeed);
             GameObject arrow = Instantiate(arrowPrefab, transform.position,  transform.rotation);
             arrow.GetComponent<Rigidbody>().AddRelativeForce(new Vector3 (0, arrowSpeed, 0));
             arrowCount--;

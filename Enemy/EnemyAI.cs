@@ -14,7 +14,8 @@ public class EnemyAI : MonoBehaviour
 
     //Attacking
     public float TimeBetweenAttacks;
-    bool isAttacking;
+    public bool isAttacking;
+    public float damage;
 
     //States
     public float sightRange, attackRange;
@@ -23,7 +24,6 @@ public class EnemyAI : MonoBehaviour
     //Take Damage
     public float health = 50f;
     public Animator anim;
-    private NavMeshAgent agent;
     private bool CanGetHurted = true;
 
     private void Awake()
