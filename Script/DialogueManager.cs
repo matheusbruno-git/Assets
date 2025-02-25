@@ -6,12 +6,16 @@ using StarterAssets;
 public class DialogueManager : MonoBehaviour
 {
     [Header("Dialogue")]
-    public TextMeshProUGUI textComponent;
-    public float textSpeed = 0.05f;
-    public bool isDialoguing = false;
-    public float detectionRadius = 5f;
+    [SerializeField]
+    private TextMeshProUGUI textComponent;
+    [SerializeField]
+    private float textSpeed = 0.05f;
+    [SerializeField]
+    private float detectionRadius = 5f;
+
+    private bool isDialoguing;
+    private int currentIndex;
     private string[] lines;
-    private int index;
     private NPC_Behaviour detectedNPC;
 
     private StarterAssetsInputs starterAssetsInputs;
@@ -19,6 +23,7 @@ public class DialogueManager : MonoBehaviour
     void Start()
     {
         textComponent.text = string.Empty;
+        textComponent.gameObject.SetActive(false);
         starterAssetsInputs = GetComponent<StarterAssetsInputs>();
     }
 
@@ -33,14 +38,14 @@ public class DialogueManager : MonoBehaviour
 
         if (isDialoguing && starterAssetsInputs.attack1)
         {
-            if (textComponent.text == lines[index])
+            if (textComponent.text == lines[currentIndex])
             {
                 NextLine();
             }
             else
             {
                 StopAllCoroutines();
-                textComponent.text = lines[index];
+                textComponent.text = lines[currentIndex];
             }
         }
     }
@@ -52,12 +57,12 @@ public class DialogueManager : MonoBehaviour
 
         foreach (var hitCollider in hitColliders)
         {
-            NPC_Behaviour NPC = hitCollider.GetComponent<NPC_Behaviour>();
+            NPC_Behaviour npc = hitCollider.GetComponent<NPC_Behaviour>();
 
-            if (NPC != null)
+            if (npc != null)
             {
-                detectedNPC = NPC;
-                lines = NPC.lines;
+                detectedNPC = npc;
+                lines = npc.lines;
                 Debug.Log("Detected NPC with NPC_Behaviour script.");
                 textComponent.gameObject.SetActive(true);
                 textComponent.text = "Press X or Mouse 1 to start conversation";
@@ -68,15 +73,16 @@ public class DialogueManager : MonoBehaviour
 
     public void StartDialogue()
     {
+        textComponent.gameObject.SetActive(true);
         isDialoguing = true;
-        index = 0;
+        currentIndex = 0;
         textComponent.text = string.Empty;
         StartCoroutine(TypeLine());
     }
 
     IEnumerator TypeLine()
     {
-        foreach (char c in lines[index].ToCharArray())
+        foreach (char c in lines[currentIndex].ToCharArray())
         {
             textComponent.text += c;
             yield return new WaitForSeconds(textSpeed);
@@ -85,9 +91,9 @@ public class DialogueManager : MonoBehaviour
 
     public void NextLine()
     {
-        if (index < lines.Length - 1)
+        if (currentIndex < lines.Length - 1)
         {
-            index++;
+            currentIndex++;
             textComponent.text = string.Empty;
             StartCoroutine(TypeLine());
         }
