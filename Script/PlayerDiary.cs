@@ -9,14 +9,13 @@ public class PlayerDiary : MonoBehaviour
     public Text playerDiaryText;
     public Text questText;
     public VerticalLayoutGroup questLayoutGroup;
-    private List<Quests> questTextObjects = new List<Quests>();
+    private List<Quest> questList = new List<Quest>();
     public PlayerData playerData;
 
     public GameObject mapObject;
     public Image mapImage;
 
-    // Other important things
-    public Text otherText;
+    public GameObject questObjectPrefab; // Prefab for the quest object UI
 
     private void Start()
     {
@@ -28,44 +27,40 @@ public class PlayerDiary : MonoBehaviour
 
     void Update()
     {
-        if (playerData != null)
-        {
-            playerDiaryText.text = playerData.playerDiaryText;
-            otherText.text = playerData.otherText;
-        }
-
-        if (Input.GetKeyDown(KeyCode.Tab))
-        {
-            playerDiary.gameObject.SetActive(!playerDiary.gameObject.activeSelf);
-            if (playerDiary.gameObject.activeSelf)
-            {
-                for (int i = 0; i < questTextObjects.Count; i++)
-                {
-                    questTextObjects[i].gameObject.SetActive(true);
-                }
-            }
-            else
-            {
-                for (int i = 0; i < questTextObjects.Count; i++)
-                {
-                    questTextObjects[i].gameObject.SetActive(false);
-                }
-            }
-        }
+        // You can update quest status or player diary content here if necessary
     }
 
-    public void ShowQuests(List<string> quests)
+    // Display quests in the diary
+    public void ShowQuests()
     {
-        playerDiary.gameObject.SetActive(true);
-        for (int i = 0; i < quests.Count; i++)
+        // Clear current quests
+        foreach (Transform child in questLayoutGroup.transform)
         {
-            GameObject questObject = Instantiate(questText.gameObject, questLayoutGroup.transform);
-            Quests quest = questObject.GetComponent<Quests>();
-            quest.QuestName.text = quests[i];
-            questTextObjects.Add(quest);
+            Destroy(child.gameObject);
+        }
+
+        // Add quests to the list
+        foreach (Quest quest in questList)
+        {
+            // Create a new quest entry using the prefab
+            GameObject questEntry = Instantiate(questObjectPrefab, questLayoutGroup.transform);
+
+            // Get the QuestObject component from the instantiated prefab
+            QuestObject questObject = questEntry.GetComponent<QuestObject>();
+
+            // Set the quest name
+            questObject.questNameText.text = quest.QuestName;
+
+            // Set the quest state (Active/Inactive/Completed)
+            questObject.questStateText.text = $"State: {quest.missionState}";
+
+            // Set the quest condition (e.g., CollectItem, TalkToNPC, etc.)
+            string conditionText = $"Condition: {quest.conditionType} - {quest.targetName} x{quest.targetAmount}";
+            questObject.questConditionText.text = conditionText;
         }
     }
 
+    // Show map in the diary
     public void ShowMap()
     {
         if (mapObject != null)
@@ -74,6 +69,7 @@ public class PlayerDiary : MonoBehaviour
         }
     }
 
+    // Hide map in the diary
     public void HideMap()
     {
         if (mapObject != null)
@@ -81,5 +77,18 @@ public class PlayerDiary : MonoBehaviour
             mapObject.SetActive(false);
         }
     }
+
+    // Optionally add quests to the player diary (for testing or dynamic quest additions)
+    public void AddQuest(Quest newQuest)
+    {
+        questList.Add(newQuest);
+    }
 }
 
+// QuestObject class for the quest UI entry
+public class QuestObject : MonoBehaviour
+{
+    public Text questNameText;
+    public Text questConditionText;
+    public Text questStateText;
+}

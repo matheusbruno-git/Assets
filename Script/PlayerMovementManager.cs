@@ -62,7 +62,7 @@ public class PlayerMovementManager : MonoBehaviour
     {
         if (_controller.isGrounded)
         {
-            _velocity.y = -2f; // Ensure the player sticks to the ground
+            _velocity.y = -2f;
             animator.SetBool("Grounded", true);
         }
         else
@@ -72,11 +72,11 @@ public class PlayerMovementManager : MonoBehaviour
 
         if (isSprinting)
         {
-            AdjustCameraFOV(70f); // Zoom out when sprinting
+            AdjustCameraFOV(70f);
         }
         else
         {
-            AdjustCameraFOV(60f); // Normal view
+            AdjustCameraFOV(60f);
         }
 
         if (combatManager != null && combatManager.IsInCombat()) return;

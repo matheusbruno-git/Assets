@@ -10,7 +10,7 @@ public class CollisionDetection : MonoBehaviour
 
     private void OnTriggerEnter(Collider other) 
     {
-        if(other.tag == "Enemy" && enemyAI.isAttacking && attackCode != null) 
+        if(other.tag == "Enemy" && attackCode.isAttacking && attackCode != null) 
         {
             EnemyAI target = other.GetComponent<EnemyAI>();
             if(target != null)
@@ -18,7 +18,7 @@ public class CollisionDetection : MonoBehaviour
                 target.TakeDamage(attackCode.damage);
             }
         }
-        else if(other.tag == "Player" && attackCode.isAttacking && enemyAI != null)
+        else if(other.tag == "Player" && enemyAI.isAttacking && enemyAI != null)
         {
             Debug.Log(other.name);
             CombatManager playerHealth = other.GetComponent<CombatManager>();

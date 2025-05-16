@@ -1,70 +1,52 @@
-using UnityEngine;
+using System;
 using System.Collections.Generic;
+using UnityEngine;
 
 [CreateAssetMenu(fileName = "NewBrain", menuName = "Scriptables/Brain", order = 2)]
 public class Brain : ScriptableObject
 {
-    public enum LikingType
+    [System.Serializable]
+    public struct EmotionTag
     {
-        Food,
-        FavoritePlace,
-        Person
-    }
-
-    public enum DislikingType
-    {
-        Food,
-        FavoritePlace,
-        Person
+        public string Tag;
+        public int Weight;
     }
 
     [System.Serializable]
-    public class Liking
+    public struct TimedMemory
     {
-        public LikingType Type { get; set; }
-        public string Value { get; set; }
+        public string Description;
+        public float TimeStamp;
+    }
 
-        public Liking(LikingType type, string value)
+    [Header("Emotion Tags")]
+    [SerializeField]
+    public List<EmotionTag> emotionalAssociations = new List<EmotionTag>();
+
+    [Header("Memories")]
+    [SerializeField]
+    public List<TimedMemory> memories = new List<TimedMemory>();
+
+    public void RegisterEmotion(string tag, int weight)
+    {
+        int index = emotionalAssociations.FindIndex(e => e.Tag == tag);
+        if (index >= 0)
         {
-            Type = type;
-            Value = value;
+            emotionalAssociations[index] = new EmotionTag { Tag = tag, Weight = weight };
+        }
+        else
+        {
+            emotionalAssociations.Add(new EmotionTag { Tag = tag, Weight = weight });
         }
     }
 
-    [System.Serializable]
-    public class Disliking
+    public void LogMemory(string description)
     {
-        public DislikingType Type { get; set; }
-        public string Value { get; set; }
-
-        public Disliking(DislikingType type, string value)
-        {
-            Type = type;
-            Value = value;
-        }
+        float now = Time.time;
+        memories.Add(new TimedMemory { Description = description, TimeStamp = now });
+        Debug.Log($"Memory added: {description} at time {now}");
     }
 
-    public List<Liking> Likings { get; private set; } = new List<Liking>();
-    public List<Disliking> Dislikings { get; private set; } = new List<Disliking>();
-    public List<string> Memories { get; private set; } = new List<string>();
-
-    public void AddToMemories(string memory)
-    {
-        if (!Memories.Contains(memory))
-        {
-            Memories.Add(memory);
-            Debug.Log($"Memory added: {memory}");
-        }
-    }
-
-    public void AddLiking(LikingType type, string value)
-    {
-        Likings.Add(new Liking(type, value));
-    }
-
-    public void AddDisliking(DislikingType type, string value)
-    {
-        Dislikings.Add(new Disliking(type, value));
-    }
+    public List<EmotionTag> EmotionalAssociations => emotionalAssociations;
+    public List<TimedMemory> Memories => memories;
 }
-

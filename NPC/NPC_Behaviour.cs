@@ -1,10 +1,10 @@
 using System.Collections;
 using System.Collections.Generic;
-using System.Linq;
 using UnityEngine;
 using UnityEngine.AI;
 
-struct Personality
+[System.Serializable]
+public struct Personality
 {
     public string name;
 
@@ -18,20 +18,28 @@ public class NPC_Behaviour : MonoBehaviour
 {
     private NavMeshAgent agent;
     private Animator anim;
+
+    [Header("Locations")]
     public Transform JobLocation;
     public Transform homeLocation;
-    public string job;
-    public LightningManager dayScript;
+
+    [Header("Schedule")]
     public float WakeUpTime, LunchTime, EndLunchTime, SocializeTime, GoHomeTime;
-    public float happiness, hunger, hungerIncreaser;
-    public Brain BrainCode;
-    bool IsEating;
+
+    [Header("Stats")]
+    public float happiness;
+    public float hunger;
+    public float hungerIncreaser;
+
+    [Header("References")]
+    public Brain CognitiveProfile;
+    public LightningManager dayScript;
+
+    private bool IsEating;
+    private bool isTalking = false;
 
     [Header("Dialogue")]
-    public string[] lines;
     public float detectionRadius = 5f;
-
-    private bool isTalking = false;
 
     void Start()
     {
@@ -43,6 +51,7 @@ public class NPC_Behaviour : MonoBehaviour
     {
         hunger = Mathf.Min(hunger + Time.deltaTime * hungerIncreaser, 100);
         float hour = dayScript.TimeOfDay;
+
         if (hour >= WakeUpTime && hour <= LunchTime)
         {
             agent.SetDestination(JobLocation.position);
@@ -72,97 +81,104 @@ public class NPC_Behaviour : MonoBehaviour
     void Lunch()
     {
         anim.Play("Lunch");
-        var foodLiking = BrainCode.likings.FirstOrDefault(l => l.likingType == Brain.LikingType.Food);
-        if (foodLiking != null)
+
+        var foodTags = BrainCode.EmotionalAssociations;
+        string favoriteFood = null;
+        int bestWeight = int.MinValue;
+
+        foreach (var tag in foodTags)
         {
-            Eat(foodLiking.value);
+            if (tag.Tag.StartsWith("Food_") && tag.Weight > bestWeight)
+            {
+                bestWeight = tag.Weight;
+                favoriteFood = tag.Tag.Substring(5); // remove "Food_"
+            }
         }
 
+        if (!string.IsNullOrEmpty(favoriteFood))
+        {
+            Eat(favoriteFood);
+        }
     }
 
     void Eat(string food)
     {
         anim.Play("Eating");
         hunger = 0;
+        BrainCode.LogMemory($"Ate {food}");
     }
 
     void Socialize()
     {
-        foreach (var liking in BrainCode.likings)
+        foreach (var tag in BrainCode.EmotionalAssociations)
         {
-            switch (liking.likingType)
+            if (tag.Tag.StartsWith("Place_") && tag.Weight > 0)
             {
-                case Brain.LikingType.FavoritePlace:
-                    VisitFavoritePlace(liking.value);
-                    break;
-                case Brain.LikingType.Person:
-                    InteractWithPerson(liking.value);
-                    break;
+                string placeName = tag.Tag.Substring(6); // remove "Place_"
+                VisitPlace(placeName);
+            }
+            else if (tag.Tag.StartsWith("Person_") && tag.Weight > 0)
+            {
+                string personName = tag.Tag.Substring(7);
+                InteractWithPerson(personName);
             }
         }
     }
 
-    void VisitFavoritePlace(string place)
+    void VisitPlace(string place)
     {
-        Transform favoritePlaceTransform = GameObject.Find(place)?.transform;
-        if (favoritePlaceTransform != null)
+        Transform placeTransform = GameObject.Find(place)?.transform;
+        if (placeTransform != null)
         {
-            agent.SetDestination(favoritePlaceTransform.position);
+            agent.SetDestination(placeTransform.position);
+            BrainCode.LogMemory($"Visited {place}");
         }
     }
 
-    void InteractWithPerson(string person)
+    void InteractWithPerson(string personName)
     {
-        GameObject personObject = GameObject.Find(person);
-        if (personObject != null)
+        GameObject target = GameObject.Find(personName);
+        if (target != null)
         {
             float talkTime = Random.Range(5f, 60f);
-            StartCoroutine(Conversation(personObject.GetComponent<NPC_Behaviour>(), talkTime));
+            StartCoroutine(Conversation(target.GetComponent<NPC_Behaviour>(), talkTime));
         }
     }
 
     void DetectNearbyNPCs()
     {
-        Collider[] hitColliders = Physics.OverlapSphere(transform.position, detectionRadius);
-
-        foreach (var hitCollider in hitColliders)
+        Collider[] colliders = Physics.OverlapSphere(transform.position, detectionRadius);
+        foreach (var col in colliders)
         {
-            if (hitCollider != this.GetComponent<Collider>())
+            if (col != GetComponent<Collider>())
             {
-                NPC_Behaviour nearbyNPC = hitCollider.GetComponent<NPC_Behaviour>();
-
-                if (nearbyNPC != null && !isTalking)
+                NPC_Behaviour npc = col.GetComponent<NPC_Behaviour>();
+                if (npc != null && !npc.isTalking && !isTalking)
                 {
                     float talkTime = Random.Range(5f, 60f);
-                    StartCoroutine(Conversation(nearbyNPC, talkTime));
+                    StartCoroutine(Conversation(npc, talkTime));
                     break;
                 }
             }
         }
     }
 
-    void memorize(string memory)
-    {
-        BrainCode.AddToMemories(memory);
-    }
-
-    IEnumerator Conversation(NPC_Behaviour otherNPC, float waitTime)
+    IEnumerator Conversation(NPC_Behaviour other, float duration)
     {
         isTalking = true;
-        otherNPC.isTalking = true;
+        other.isTalking = true;
 
         anim.Play("Talk");
-        otherNPC.anim.Play("Talk");
- 
-        Debug.Log($"{name} started talking with {otherNPC.name}");
+        other.anim.Play("Talk");
 
-        yield return new WaitForSeconds(waitTime);
+        yield return new WaitForSeconds(duration);
 
         isTalking = false;
-        otherNPC.isTalking = false;
+        other.isTalking = false;
 
         anim.Play("Idle");
-        otherNPC.anim.Play("Idle");
-        memorize($"{name} talked with {otherNPC.name} for {waitTime} seconds");
+        other.anim.Play("Idle");
+
+        BrainCode.LogMemory($"{name} talked with {other.name} for {duration} seconds");
     }
 }
