@@ -6,8 +6,6 @@ using Cinemachine;
 
 public class CombatManager : MonoBehaviour
 {
-
-
     [Header("Aim")]
     [SerializeField] private CinemachineFreeLook aimVirtualCamera;
     [SerializeField] private CinemachineFreeLook virtualCamera;
@@ -16,7 +14,6 @@ public class CombatManager : MonoBehaviour
     [SerializeField] private LayerMask aimColliderLayerMask;
     bool isAiming;
     public PlayerData playerData;
-
 
     [Header("Arrow")]
     public GameObject arrowPrefab;
@@ -29,7 +26,6 @@ public class CombatManager : MonoBehaviour
     private float dodgeTimer;
     public float dodgeDistance = 10f;
     public float dodgeCooldown = 2f;
-
     private Vector3 moveDirection;
 
     [Header("Attack")]
@@ -46,7 +42,6 @@ public class CombatManager : MonoBehaviour
     public float weaponMultiplier;
 
     private PlayerInput playerInput;
-
     public bool stealthMode = false;
 
     private InputAction aimAction;
@@ -54,14 +49,18 @@ public class CombatManager : MonoBehaviour
     private InputAction attack2Action;
     private InputAction parryAction;
 
+    // Combo system
+    private int comboStep = 0;
+    private float lastAttackTime;
+    public float comboResetTime = 1f;
+
     void Start()
     {
         isAttacking = false;
         anim = GetComponent<Animator>();
         controller = GetComponent<CharacterController>();
-
         playerInput = GetComponent<PlayerInput>();
-        damage = playerData.Strength *  weaponMultiplier;
+        damage = playerData.Strength * weaponMultiplier;
 
         aimAction = playerInput.actions["Aim"];
         attack1Action = playerInput.actions["Attack1"];
@@ -72,14 +71,15 @@ public class CombatManager : MonoBehaviour
     void Update()
     {
         HandleAiming();
-        HandleAttacks();
+        HandleComboAttack();
+
         if (parryAction.triggered)
         {
-            Attack1();
+            StartCoroutine(Parry());
         }
     }
 
-    IEnumerator Parry()
+    private IEnumerator Parry()
     {
         isBlocking = true;
         yield return new WaitForSeconds(parryTime);
@@ -95,18 +95,16 @@ public class CombatManager : MonoBehaviour
         {
             virtualCamera.gameObject.SetActive(false);
             aimVirtualCamera.gameObject.SetActive(true);
-            Vector3 mouseWorldPosition = Vector3.zero;
+
             Vector2 screenCenterPoint = new Vector2(Screen.width / 2f, Screen.height / 2f);
             Ray ray = Camera.main.ScreenPointToRay(screenCenterPoint);
-            if (Physics.Raycast(ray, out RaycastHit raycastHit, 999f, aimColliderLayerMask))
+            if (Physics.Raycast(ray, out RaycastHit hit, 999f, aimColliderLayerMask))
             {
-                mouseWorldPosition = raycastHit.point;
+                Vector3 aimTarget = hit.point;
+                aimTarget.y = transform.position.y;
+                Vector3 aimDirection = (aimTarget - transform.position).normalized;
+                transform.forward = Vector3.Lerp(transform.forward, aimDirection, Time.deltaTime * 20f);
             }
-
-            Vector3 aimTarget = mouseWorldPosition;
-            aimTarget.y = transform.position.y;
-            Vector3 aimDirection = (aimTarget - transform.position).normalized;
-            transform.forward = Vector3.Lerp(transform.forward, aimDirection, Time.deltaTime * 20f);
         }
         else
         {
@@ -115,33 +113,63 @@ public class CombatManager : MonoBehaviour
         }
     }
 
-    private void HandleAttacks()
+    private void HandleComboAttack()
     {
-        if (attack1Action.triggered && !isAiming && !stealthMode)
+        if (isAiming || stealthMode || isAttacking) return;
+
+        if (attack1Action.triggered && Time.time - lastAttackTime > 0.2f)
         {
-            Attack1();
-        }
-        else if (attack1Action.triggered && stealthMode)
-        {
-            StealthTakedown();
+            lastAttackTime = Time.time;
+            comboStep++;
+            if (comboStep > 3) comboStep = 1;
+
+            Transform target = GetNearestEnemy();
+            if (target != null)
+            {
+                FaceTarget(target);
+                float distance = Vector3.Distance(transform.position, target.position);
+                if (distance > approachDistance)
+                {
+                    Vector3 dir = (target.position - transform.position).normalized;
+                    controller.Move(dir * moveSpeed * Time.deltaTime);
+                }
+            }
+
+            anim.SetTrigger("Attack" + comboStep);
+            isAttacking = true;
         }
 
-        if (attack2Action.triggered && !isAttacking)
+        if (Time.time - lastAttackTime > comboResetTime)
         {
-            Attack2();
+            comboStep = 0;
         }
     }
 
-    private void Attack1()
+    private Transform GetNearestEnemy()
     {
-        isAttacking = true;
-        anim.SetTrigger("Attack1");
+        Collider[] enemies = Physics.OverlapSphere(transform.position, detectionRadius, enemyLayerMask);
+        Transform nearest = null;
+        float minDist = Mathf.Infinity;
+
+        foreach (var enemy in enemies)
+        {
+            float dist = Vector3.Distance(transform.position, enemy.transform.position);
+            if (dist < minDist)
+            {
+                minDist = dist;
+                nearest = enemy.transform;
+            }
+        }
+
+        return nearest;
     }
 
-    private void Attack2()
+    private void FaceTarget(Transform target)
     {
-        isAttacking = true;
-        anim.SetTrigger("Attack2");
+        Vector3 direction = (target.position - transform.position).normalized;
+        direction.y = 0;
+        Quaternion lookRotation = Quaternion.LookRotation(direction);
+        transform.rotation = Quaternion.Slerp(transform.rotation, lookRotation, Time.deltaTime * rotationSpeed);
     }
 
     private void StealthTakedown()
@@ -177,22 +205,19 @@ public class CombatManager : MonoBehaviour
 
     public void TakeDamage(float amount)
     {
-        if(!isBlocking) 
+        if (!isBlocking)
         {
             anim.Play("Impact");
             playerData.Health -= amount;
         }
     }
 
-    
-
-    
     public void ShootArrow()
     {
-        if (isAiming && attack1Action.triggered && arrowCount != 0)
+        if (isAiming && attack1Action.triggered && arrowCount > 0)
         {
-            GameObject arrow = Instantiate(arrowPrefab, transform.position,  transform.rotation);
-            arrow.GetComponent<Rigidbody>().AddRelativeForce(new Vector3 (0, arrowSpeed, 0));
+            GameObject arrow = Instantiate(arrowPrefab, transform.position, transform.rotation);
+            arrow.GetComponent<Rigidbody>().AddRelativeForce(Vector3.up * arrowSpeed);
             arrowCount--;
         }
     }
